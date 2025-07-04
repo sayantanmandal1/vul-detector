@@ -2,9 +2,35 @@ from app.services.tree_sitter_loader import LANGUAGE_MAP
 from app.services.vuln_rules import get_vulnerability_patterns
 from tree_sitter import Parser
 
-def run_static_analysis(code: str, language: str):
+def run_static_analysis(code: str, language: str, file: str = "unknown"):
+    # For HTML/CSS, use simple text matching (no Tree-sitter needed)
+    if language in ["html", "css"]:
+        patterns = get_vulnerability_patterns(language)
+        vulnerabilities = []
+        seen_patterns = set()  # Track which patterns have been reported
+        
+        lines = code.split('\n')
+        for line_num, line in enumerate(lines, 1):
+            for pattern in patterns:
+                if pattern["pattern"] in line and pattern["pattern"] not in seen_patterns:
+                    vulnerabilities.append({
+                        "file": file,
+                        "line": line_num,
+                        "language": language,
+                        "description": pattern["description"]
+                    })
+                    seen_patterns.add(pattern["pattern"])
+        
+        return vulnerabilities
+    
+    # For programming languages, use Tree-sitter
     if language not in LANGUAGE_MAP:
-        return [{"line": 1, "description": f"Language '{language}' not supported."}]
+        return [{
+            "file": file,
+            "line": 1, 
+            "language": language,
+            "description": f"Language '{language}' not supported."
+        }]
 
     parser = Parser()
     parser.set_language(LANGUAGE_MAP[language])
@@ -20,7 +46,9 @@ def run_static_analysis(code: str, language: str):
         for pattern in patterns:
             if pattern["pattern"] in text and pattern["pattern"] not in seen_patterns:
                 vulnerabilities.append({
+                    "file": file,
                     "line": node.start_point[0] + 1,
+                    "language": language,
                     "description": pattern["description"]
                 })
                 seen_patterns.add(pattern["pattern"])

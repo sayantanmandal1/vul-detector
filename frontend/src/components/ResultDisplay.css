@@ -1,0 +1,237 @@
+.result-display {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-top: 20px;
+  max-width: 100%;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error {
+  background: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  padding: 16px;
+  color: #c62828;
+}
+
+.no-result {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.result-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.download-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.format-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 14px;
+}
+
+.download-btn {
+  background: #2196f3;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.download-btn:hover {
+  background: #1976d2;
+}
+
+.result-summary {
+  background: #f5f5f5;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-item .label {
+  font-weight: 600;
+  color: #666;
+  font-size: 14px;
+}
+
+.summary-item .value {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.vulnerabilities-list h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 20px;
+}
+
+.vulnerability-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fafafa;
+}
+
+.vuln-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vuln-file {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.vuln-line {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.vuln-language {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.vuln-severity {
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.vuln-description {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.vuln-cwe, .vuln-cve {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.vuln-fix {
+  margin-top: 12px;
+  padding: 12px;
+  background: #e8f5e8;
+  border-radius: 4px;
+  border-left: 4px solid #4caf50;
+}
+
+.vuln-fix pre {
+  margin: 8px 0 0 0;
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #2e7d32;
+  background: white;
+  padding: 8px;
+  border-radius: 3px;
+  border: 1px solid #c8e6c9;
+}
+
+.no-vulnerabilities {
+  text-align: center;
+  padding: 40px;
+  background: #e8f5e8;
+  border-radius: 6px;
+  border: 1px solid #c8e6c9;
+}
+
+.no-vulnerabilities h3 {
+  color: #2e7d32;
+  margin: 0 0 12px 0;
+}
+
+.no-vulnerabilities p {
+  color: #388e3c;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .result-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .download-section {
+    justify-content: center;
+  }
+  
+  .vuln-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .result-summary {
+    grid-template-columns: 1fr;
+  }
+} 
