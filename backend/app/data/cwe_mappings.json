@@ -1,0 +1,12 @@
+[
+    {
+        "keyword": "buffer overflow",
+        "cwe": "CWE-120",
+        "cve": "CVE-2022-12345"
+    },
+    {
+        "keyword": "SQL injection",
+        "cwe": "CWE-89",
+        "cve": "CVE-2019-8765"
+    }
+] 

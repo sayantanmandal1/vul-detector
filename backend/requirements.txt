@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+transformers
+tree_sitter
+gitpython
+openai
+requests
