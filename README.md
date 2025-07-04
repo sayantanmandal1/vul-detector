@@ -181,9 +181,9 @@ npm start
 ---
 
 ## 📧 Contact & Support
-- **Author:** [Your Name]
-- **Email:** your.email@example.com
-- **Issues:** [GitHub Issues](https://github.com/yourusername/llm-vuln-detector/issues)
+- **Author:** [Sayantan Mandal]
+- **Email:** msayantan05@gmail.com
+- **Issues:** [GitHub Issues](https://github.com/sayantanmandal1/vul-detector/issues)
 
 ---
 
