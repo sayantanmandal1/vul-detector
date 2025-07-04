@@ -1,4 +1,4 @@
-# Use Python 3.11 slim image for smaller size and better security
+# Use Python 3.10 slim image for smaller size and better security
 FROM python:3.10-slim as builder
 
 # Set environment variables
@@ -23,17 +23,29 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy application code
+COPY app ./app
+
+# Create build directory
+RUN mkdir -p app/services/build
+
+# Build Tree-sitter grammars
+RUN cd app/services && \
+    python -c "import tree_sitter; tree_sitter.Language.build_library('build/my-languages.so', ['tree-sitter-python', 'tree-sitter-c', 'tree-sitter-cpp', 'tree-sitter-javascript', 'tree-sitter-java'])"
+
 # Production stage
 FROM python:3.10-slim as production
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    DOCKER_ENV=true
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y \
     git \
+    curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -44,11 +56,11 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 # Copy Python dependencies from builder stage
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code
-COPY app ./app
+# Copy application code and built grammars
+COPY --from=builder /app/app ./app
 COPY pytest.ini .
 COPY requirements.txt .
 
