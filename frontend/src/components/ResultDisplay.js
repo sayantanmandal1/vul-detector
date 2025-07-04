@@ -7,20 +7,50 @@ const ResultDisplay = ({ result, loading, error }) => {
   const downloadReport = async (format) => {
     if (!result) return;
 
+    console.log(`Starting download for format: ${format}`);
+    console.log('Result data:', result);
+
     try {
+      const requestBody = {
+        analysis_result: result,
+        format: format
+      };
+      console.log('Request body:', requestBody);
+
       const response = await fetch('http://localhost:8000/report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          analysis_result: result,
-          format: format
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Response error text:', errorText);
+        
+        // Try to parse error as JSON for better error handling
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.detail) {
+            if (typeof errorJson.detail === 'object') {
+              errorMessage = `${errorJson.detail.error}: ${errorJson.detail.message}`;
+              if (errorJson.detail.suggestion) {
+                errorMessage += `\n\nSuggestion: ${errorJson.detail.suggestion}`;
+              }
+            } else {
+              errorMessage = errorJson.detail;
+            }
+          }
+        } catch (parseError) {
+          errorMessage += `, message: ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       // Get the filename from the Content-Disposition header
@@ -33,12 +63,19 @@ const ResultDisplay = ({ result, loading, error }) => {
         }
       }
 
+      console.log('Filename:', filename);
+
       // Handle different content types
       const contentType = response.headers.get('Content-Type');
+      console.log('Content-Type:', contentType);
       
       if (format === 'pdf' || contentType?.includes('application/pdf')) {
+        console.log('Processing PDF download...');
         // Handle PDF as blob
         const blob = await response.blob();
+        console.log('Blob size:', blob.size);
+        console.log('Blob type:', blob.type);
+        
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -47,7 +84,9 @@ const ResultDisplay = ({ result, loading, error }) => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        console.log('PDF download completed');
       } else {
+        console.log('Processing text-based download...');
         // Handle text-based formats
         const content = await response.text();
         const blob = new Blob([content], { 
@@ -61,10 +100,27 @@ const ResultDisplay = ({ result, loading, error }) => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        console.log('Text download completed');
       }
     } catch (error) {
       console.error('Download failed:', error);
-      alert('Failed to download report. Please try again.');
+      
+      // If PDF generation failed, offer to download as JSON instead
+      if (format === 'pdf' && error.message.includes('PDF generation failed')) {
+        // eslint-disable-next-line no-restricted-globals
+        const useJson = confirm(
+          'PDF generation failed. Would you like to download the report in JSON format instead?\n\n' +
+          'JSON format provides the same detailed information and is more reliable.'
+        );
+        
+        if (useJson) {
+          console.log('User chose to download as JSON instead');
+          downloadReport('json');
+          return;
+        }
+      }
+      
+      alert(`Failed to download report: ${error.message}`);
     }
   };
 
@@ -123,10 +179,10 @@ const ResultDisplay = ({ result, loading, error }) => {
             onChange={(e) => setDownloadFormat(e.target.value)}
             className="format-select"
           >
-            <option value="json">JSON</option>
+            <option value="json">JSON (Recommended)</option>
             <option value="text">Text</option>
             <option value="html">HTML</option>
-            <option value="pdf">PDF</option>
+            <option value="pdf">PDF (May fail on some systems)</option>
           </select>
           <button 
             onClick={() => downloadReport(downloadFormat)}
@@ -134,6 +190,11 @@ const ResultDisplay = ({ result, loading, error }) => {
           >
             Download Report
           </button>
+          {downloadFormat === 'pdf' && (
+            <div className="format-note" style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+              💡 Tip: If PDF fails, try JSON format for the most reliable download
+            </div>
+          )}
         </div>
       </div>
 

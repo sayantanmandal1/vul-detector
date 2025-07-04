@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Union
 from fpdf import FPDF
 import io
+import os
 
 class ReportGenerator:
     def __init__(self):
@@ -41,82 +42,116 @@ class ReportGenerator:
     
     def generate_pdf_report(self, analysis_result: Dict[str, Any]) -> bytearray:
         """Generate a PDF report with detailed vulnerability information."""
-        vulnerabilities = analysis_result.get("vulnerabilities", [])
-        
-        # Add severity to each vulnerability
-        for vuln in vulnerabilities:
-            vuln["severity"] = self._determine_severity(vuln.get("description", ""))
-        
-        # Create PDF
-        pdf = FPDF()
-        pdf.add_page()
-        
-        # Title
-        pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, "Vulnerability Analysis Report", ln=True, align='C')
-        pdf.ln(10)
-        
-        # Report metadata
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 10, f"Repository: {analysis_result.get('repository_url', 'N/A')}", ln=True)
-        pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
-        pdf.cell(0, 10, f"Files Analyzed: {analysis_result.get('total_files_analyzed', 0)}", ln=True)
-        pdf.cell(0, 10, f"Total Vulnerabilities: {analysis_result.get('total_vulnerabilities', 0)}", ln=True)
-        pdf.ln(10)
-        
-        # Summary by severity
-        grouped_by_severity = self._group_by_severity(vulnerabilities)
-        pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, "Summary by Severity:", ln=True)
-        pdf.ln(5)
-        
-        pdf.set_font("Arial", "", 12)
-        for severity in ["high", "medium", "low"]:
-            count = len(grouped_by_severity[severity])
-            pdf.cell(0, 10, f"{severity.upper()}: {count}", ln=True)
-        pdf.ln(10)
-        
-        # Detailed vulnerabilities by severity
-        for severity in ["high", "medium", "low"]:
-            vulns = grouped_by_severity[severity]
-            if vulns:
-                pdf.set_font("Arial", "B", 14)
-                pdf.cell(0, 10, f"{severity.upper()} SEVERITY VULNERABILITIES:", ln=True)
-                pdf.ln(5)
-                
-                for i, vuln in enumerate(vulns, 1):
-                    pdf.set_font("Arial", "B", 12)
-                    pdf.cell(0, 10, f"{i}. File: {vuln.get('file', 'N/A')}", ln=True)
-                    
-                    pdf.set_font("Arial", "", 10)
-                    pdf.cell(0, 8, f"Line: {vuln.get('line', 'N/A')}", ln=True)
-                    pdf.cell(0, 8, f"Language: {vuln.get('language', 'N/A')}", ln=True)
-                    pdf.cell(0, 8, f"Description: {vuln.get('description', 'N/A')}", ln=True)
-                    
-                    if vuln.get('cwe'):
-                        pdf.cell(0, 8, f"CWE: {vuln.get('cwe')}", ln=True)
-                    if vuln.get('cve'):
-                        pdf.cell(0, 8, f"CVE: {vuln.get('cve')}", ln=True)
-                    
-                    if vuln.get('suggested_fix'):
-                        pdf.cell(0, 8, "Suggested Fix:", ln=True)
-                        # Split long text into multiple lines
-                        fix_text = vuln.get('suggested_fix', '')
-                        words = fix_text.split()
-                        line = ""
-                        for word in words:
-                            if len(line + word) < 80:
-                                line += word + " "
-                            else:
-                                pdf.cell(0, 8, line, ln=True)
-                                line = word + " "
-                        if line:
-                            pdf.cell(0, 8, line, ln=True)
-                    
+        try:
+            vulnerabilities = analysis_result.get("vulnerabilities", [])
+            
+            # Add severity to each vulnerability
+            for vuln in vulnerabilities:
+                vuln["severity"] = self._determine_severity(vuln.get("description", ""))
+            
+            # Create PDF
+            pdf = FPDF()
+            pdf.add_page()
+
+            # Register and use Unicode font
+            font_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static/DejaVuSans.ttf"))
+            if not os.path.exists(font_path):
+                raise FileNotFoundError(f"Unicode font file not found: {font_path}")
+            pdf.add_font("DejaVu", "", font_path, uni=True)
+            pdf.set_font("DejaVu", "", 16)
+
+            # Title
+            pdf.cell(0, 10, "Vulnerability Analysis Report", ln=True, align='C')
+            pdf.ln(10)
+            
+            # Report metadata
+            pdf.set_font("DejaVu", "", 12)
+            pdf.cell(0, 10, f"Repository: {analysis_result.get('repository_url', 'N/A')}", ln=True)
+            pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
+            pdf.cell(0, 10, f"Files Analyzed: {analysis_result.get('total_files_analyzed', 0)}", ln=True)
+            pdf.cell(0, 10, f"Total Vulnerabilities: {analysis_result.get('total_vulnerabilities', 0)}", ln=True)
+            pdf.ln(10)
+            
+            # Summary by severity
+            grouped_by_severity = self._group_by_severity(vulnerabilities)
+            pdf.set_font("DejaVu", "", 14)
+            pdf.cell(0, 10, "Summary by Severity:", ln=True)
+            pdf.ln(5)
+            
+            pdf.set_font("DejaVu", "", 12)
+            for severity in ["high", "medium", "low"]:
+                count = len(grouped_by_severity[severity])
+                pdf.cell(0, 10, f"{severity.upper()}: {count}", ln=True)
+            pdf.ln(10)
+            
+            # Detailed vulnerabilities by severity
+            for severity in ["high", "medium", "low"]:
+                vulns = grouped_by_severity[severity]
+                if vulns:
+                    pdf.set_font("DejaVu", "", 14)
+                    pdf.cell(0, 10, f"{severity.upper()} SEVERITY VULNERABILITIES:", ln=True)
                     pdf.ln(5)
-        
-        # Return PDF as bytes
-        return pdf.output(dest='S')
+                    
+                    for i, vuln in enumerate(vulns, 1):
+                        pdf.set_font("DejaVu", "", 12)
+                        pdf.cell(0, 10, f"{i}. File: {vuln.get('file', 'N/A')}", ln=True)
+                        
+                        pdf.set_font("DejaVu", "", 10)
+                        pdf.cell(0, 8, f"Line: {vuln.get('line', 'N/A')}", ln=True)
+                        pdf.cell(0, 8, f"Language: {vuln.get('language', 'N/A')}", ln=True)
+                        pdf.cell(0, 8, f"Description: {vuln.get('description', 'N/A')}", ln=True)
+                        
+                        if vuln.get('cwe'):
+                            pdf.cell(0, 8, f"CWE: {vuln.get('cwe')}", ln=True)
+                        if vuln.get('cve'):
+                            pdf.cell(0, 8, f"CVE: {vuln.get('cve')}", ln=True)
+                        
+                        if vuln.get('suggested_fix'):
+                            pdf.cell(0, 8, "Suggested Fix:", ln=True)
+                            # Split long text into multiple lines
+                            fix_text = vuln.get('suggested_fix', '')
+                            words = fix_text.split()
+                            line = ""
+                            for word in words:
+                                if len(line + word) < 80:
+                                    line += word + " "
+                                else:
+                                    pdf.cell(0, 8, line, ln=True)
+                                    line = word + " "
+                            if line:
+                                pdf.cell(0, 8, line, ln=True)
+                        
+                        pdf.ln(5)
+            
+            # Return PDF as bytes
+            return pdf.output(dest='S')
+            
+        except Exception as e:
+            # Enhanced fallback: create a more informative error PDF
+            print(f"PDF generation error: {e}")
+            print(f"Error type: {type(e).__name__}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            
+            try:
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", "B", 16)
+                pdf.cell(0, 10, "Vulnerability Analysis Report", ln=True, align='C')
+                pdf.ln(10)
+                pdf.set_font("Arial", "B", 12)
+                pdf.cell(0, 10, "PDF Generation Error", ln=True)
+                pdf.ln(5)
+                pdf.set_font("Arial", "", 10)
+                pdf.cell(0, 8, f"Repository: {analysis_result.get('repository_url', 'N/A')}", ln=True)
+                pdf.cell(0, 8, f"Total Vulnerabilities: {analysis_result.get('total_vulnerabilities', 0)}", ln=True)
+                pdf.cell(0, 8, f"Error: {str(e)}", ln=True)
+                pdf.cell(0, 8, "Please use JSON or text format for detailed report.", ln=True)
+                return pdf.output(dest='S')
+            except Exception as fallback_error:
+                print(f"Fallback PDF generation also failed: {fallback_error}")
+                # If even the fallback fails, raise the original error
+                raise e
     
     def generate_json_report(self, analysis_result: Dict[str, Any]) -> str:
         """Generate a JSON report with detailed vulnerability information."""

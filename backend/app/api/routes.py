@@ -72,27 +72,50 @@ async def generate_report_endpoint(request: ReportRequest):
                 vulnerabilities.append(vuln)
         analysis_dict["vulnerabilities"] = vulnerabilities
         
+        print(f"Generating {request.format} report for {len(vulnerabilities)} vulnerabilities")
+        
         if request.format == "pdf":
             # Handle PDF generation specially
-            pdf_content = generate_report(analysis_dict, "pdf")
-            
-            # Create a proper PDF response
-            filename = f"vulnerability_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            
-            # Ensure pdf_content is bytes
-            if isinstance(pdf_content, str):
-                pdf_content = pdf_content.encode('utf-8')
-            elif isinstance(pdf_content, bytearray):
-                pdf_content = bytes(pdf_content)
+            try:
+                pdf_content = generate_report(analysis_dict, "pdf")
                 
-            return StreamingResponse(
-                io.BytesIO(pdf_content),
-                media_type="application/pdf",
-                headers={
-                    "Content-Disposition": f"attachment; filename={filename}",
-                    "Content-Type": "application/pdf"
+                # Create a proper PDF response
+                filename = f"vulnerability_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                
+                # Ensure pdf_content is bytes
+                if isinstance(pdf_content, str):
+                    pdf_content = pdf_content.encode('utf-8')
+                elif isinstance(pdf_content, bytearray):
+                    pdf_content = bytes(pdf_content)
+                    
+                print(f"PDF generated successfully, size: {len(pdf_content)} bytes")
+                    
+                return StreamingResponse(
+                    io.BytesIO(pdf_content),
+                    media_type="application/pdf",
+                    headers={
+                        "Content-Disposition": f"attachment; filename={filename}",
+                        "Content-Type": "application/pdf"
+                    }
+                )
+            except Exception as pdf_error:
+                print(f"PDF generation failed: {pdf_error}")
+                print(f"Error type: {type(pdf_error).__name__}")
+                import traceback
+                print(f"Traceback: {traceback.format_exc()}")
+                
+                # Provide a helpful error response with fallback suggestion
+                error_detail = {
+                    "error": "PDF generation failed",
+                    "message": str(pdf_error),
+                    "suggestion": "Please use JSON or text format instead",
+                    "available_formats": ["json", "text", "html"]
                 }
-            )
+                
+                raise HTTPException(
+                    status_code=500, 
+                    detail=error_detail
+                )
         else:
             # Handle other formats
             content = generate_report(analysis_dict, request.format)
@@ -113,6 +136,7 @@ async def generate_report_endpoint(request: ReportRequest):
             )
             
     except Exception as e:
+        print(f"Report generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
 @router.get("/health")
