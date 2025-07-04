@@ -29,9 +29,12 @@ COPY app ./app
 # Create build directory
 RUN mkdir -p app/services/build
 
-# Build Tree-sitter grammars
-RUN cd app/services && \
-    python -c "import tree_sitter; tree_sitter.Language.build_library('build/my-languages.so', ['tree-sitter-python', 'tree-sitter-c', 'tree-sitter-cpp', 'tree-sitter-javascript', 'tree-sitter-java'])"
+# Build Tree-sitter grammars with absolute paths
+RUN cd /app/app/services && \
+    python -c "import tree_sitter; import os; tree_sitter.Language.build_library('build/my-languages.so', [os.path.abspath('tree-sitter-python'), os.path.abspath('tree-sitter-c'), os.path.abspath('tree-sitter-cpp'), os.path.abspath('tree-sitter-javascript'), os.path.abspath('tree-sitter-java')])"
+
+# Verify the build was successful
+RUN ls -la /app/app/services/build/
 
 # Production stage
 FROM python:3.10-slim as production

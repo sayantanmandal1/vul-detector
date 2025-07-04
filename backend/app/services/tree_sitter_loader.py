@@ -15,14 +15,44 @@ GRAMMAR_DIRS = [
 # Check if we're in a Docker environment (production)
 IS_DOCKER = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_ENV') == 'true'
 
-if not os.path.exists(LIB_PATH) and not IS_DOCKER:
-    # Only build if not in Docker and library doesn't exist
-    # In Docker, the library should be pre-built
+# Initialize language variables
+PY_LANGUAGE = None
+C_LANGUAGE = None
+CPP_LANGUAGE = None
+JS_LANGUAGE = None
+JAVA_LANGUAGE = None
+
+# Try to load the pre-built library
+if os.path.exists(LIB_PATH):
     try:
+        PY_LANGUAGE = Language(LIB_PATH, "python")
+        C_LANGUAGE = Language(LIB_PATH, "c")
+        CPP_LANGUAGE = Language(LIB_PATH, "cpp")
+        JS_LANGUAGE = Language(LIB_PATH, "javascript")
+        JAVA_LANGUAGE = Language(LIB_PATH, "java")
+        print("Successfully loaded pre-built tree-sitter languages")
+    except Exception as e:
+        print(f"Warning: Could not load pre-built tree-sitter languages: {e}")
+        # Fallback to None values
+        PY_LANGUAGE = None
+        C_LANGUAGE = None
+        CPP_LANGUAGE = None
+        JS_LANGUAGE = None
+        JAVA_LANGUAGE = None
+elif not IS_DOCKER:
+    # Only try to build if not in Docker and library doesn't exist
+    try:
+        print("Building tree-sitter library...")
         Language.build_library(
             LIB_PATH,
             GRAMMAR_DIRS
         )
+        PY_LANGUAGE = Language(LIB_PATH, "python")
+        C_LANGUAGE = Language(LIB_PATH, "c")
+        CPP_LANGUAGE = Language(LIB_PATH, "cpp")
+        JS_LANGUAGE = Language(LIB_PATH, "javascript")
+        JAVA_LANGUAGE = Language(LIB_PATH, "java")
+        print("Successfully built and loaded tree-sitter languages")
     except Exception as e:
         print(f"Warning: Could not build tree-sitter library: {e}")
         # Continue with None values for languages
@@ -32,20 +62,7 @@ if not os.path.exists(LIB_PATH) and not IS_DOCKER:
         JS_LANGUAGE = None
         JAVA_LANGUAGE = None
 else:
-    try:
-        PY_LANGUAGE = Language(LIB_PATH, "python")
-        C_LANGUAGE = Language(LIB_PATH, "c")
-        CPP_LANGUAGE = Language(LIB_PATH, "cpp")
-        JS_LANGUAGE = Language(LIB_PATH, "javascript")
-        JAVA_LANGUAGE = Language(LIB_PATH, "java")
-    except Exception as e:
-        print(f"Warning: Could not load tree-sitter languages: {e}")
-        # Fallback to None values
-        PY_LANGUAGE = None
-        C_LANGUAGE = None
-        CPP_LANGUAGE = None
-        JS_LANGUAGE = None
-        JAVA_LANGUAGE = None
+    print("Running in Docker environment - tree-sitter library should be pre-built")
 
 LANGUAGE_MAP = {
     "python": PY_LANGUAGE,
