@@ -66,7 +66,7 @@ build:
 # Build Docker images (optional for local development)
 docker-build:
 	@echo "Building Docker images..."
-	docker build -t vul-detector-backend .
+	cd backend && docker build -t vul-detector-backend .
 	cd frontend && docker build -t vul-detector-frontend .
 
 # Run with Docker Compose

@@ -80,10 +80,10 @@ jobs:
 
     steps:
     - name: Deploy to Render
-      uses: johnbeynon/render-deploy-action@v1.0.0
-      with:
-        service-id: ${{ secrets.RENDER_SERVICE_ID }}
-        api-key: ${{ secrets.RENDER_API_KEY }}
+      run: |
+        curl -X POST "https://api.render.com/deploy/srv-d1k3j9er433s73c3bnu0?key=UPfv4gGtqEQ"
+      env:
+        RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
 
   # Release Management
   release:

@@ -47,19 +47,8 @@ env/
 ehthumbs.db
 Thumbs.db
 
-# Node.js (frontend)
-frontend/node_modules/
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/.env.local
-frontend/.env.development.local
-frontend/.env.test.local
-frontend/.env.production.local
-
-# Build artifacts
-frontend/build/
-frontend/dist/
+# Frontend (not needed for backend)
+../frontend/
 
 # Documentation
 docs/
