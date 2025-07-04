@@ -32,7 +32,7 @@
 .form-row {
   display: flex;
   gap: 1rem;
-  align-items: end;
+  align-items: center;
   margin-bottom: 1.5rem;
 }
 
