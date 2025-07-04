@@ -9,8 +9,6 @@ services:
         value: 3.11.0
       - key: OPENAI_API_KEY
         sync: false
-      - key: REACT_APP_API_URL
-        value: https://vul-detector-backend.onrender.com
     healthCheckPath: /health
     autoDeploy: true
     region: oregon
@@ -22,6 +20,6 @@ services:
     staticPublishPath: ./build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://vul-detector-backend.onrender.com
+        value: https://vul-detector.onrender.com
     autoDeploy: true
     region: oregon 
