@@ -60,7 +60,7 @@ This document was adapted from the open-source contribution guidelines for [Face
 ## Development Setup
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.10+
 - Node.js 18+
 - Git
 
