@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 from git import Repo
 from pathlib import Path
 
@@ -62,6 +63,8 @@ def analyze_repository_files(repo_url):
     """
     from app.services.analyzer import analyze_code
     
+    start_time = time.time()
+    
     files, temp_dir = clone_and_collect_files(repo_url)
     all_vulns = []
     
@@ -70,7 +73,7 @@ def analyze_repository_files(repo_url):
             with open(file_info["path"], "r", encoding="utf-8", errors="ignore") as f:
                 code = f.read()
             
-            vulns = analyze_code(code, file_info["language"])
+            vulns, _ = analyze_code(code, file_info["language"])
             
             # Add file metadata to each vulnerability
             for vuln in vulns:
@@ -91,9 +94,12 @@ def analyze_repository_files(repo_url):
     import shutil
     shutil.rmtree(temp_dir, ignore_errors=True)
     
+    analysis_time = time.time() - start_time
+    
     return {
         "repository_url": repo_url,
         "total_files_analyzed": len(files),
         "total_vulnerabilities": len(all_vulns),
-        "vulnerabilities": all_vulns
+        "vulnerabilities": all_vulns,
+        "analysis_time": analysis_time
     } 

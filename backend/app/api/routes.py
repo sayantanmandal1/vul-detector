@@ -24,7 +24,7 @@ router = APIRouter()
 async def analyze_code_endpoint(request: CodeAnalysisRequest):
     """Analyze a single code snippet for vulnerabilities."""
     try:
-        vulnerabilities = analyze_code(request.code, request.language, file="snippet")
+        vulnerabilities, analysis_time = analyze_code(request.code, request.language, file="snippet")
         # Convert to Vulnerability models
         vulnerabilities = [Vulnerability(**v) for v in vulnerabilities]
         return AnalysisResult(
@@ -32,7 +32,7 @@ async def analyze_code_endpoint(request: CodeAnalysisRequest):
             total_files_analyzed=1,
             total_vulnerabilities=len(vulnerabilities),
             vulnerabilities=vulnerabilities,
-            analysis_time=0,
+            analysis_time=analysis_time,
             timestamp=datetime.now()
         )
     except Exception as e:
