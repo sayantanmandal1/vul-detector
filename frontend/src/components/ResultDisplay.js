@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './ResultDisplay.css';
+import { getApiUrl } from '../config';
 
 const ResultDisplay = ({ result, loading, error }) => {
   const [downloadFormat, setDownloadFormat] = useState('json');
@@ -17,7 +18,7 @@ const ResultDisplay = ({ result, loading, error }) => {
       };
       console.log('Request body:', requestBody);
 
-      const response = await fetch('http://localhost:8000/report', {
+      const response = await fetch(getApiUrl('/report'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

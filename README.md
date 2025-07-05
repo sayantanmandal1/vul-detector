@@ -1,5 +1,10 @@
 # LLM-Based Vulnerability Detection Platform
 
+## 🌐 Production Deployment
+The application is deployed on Render:
+- **Backend API**: https://vul-detector.onrender.com
+- **Frontend**: Your deployed frontend URL
+
 ## 🚀 Overview
 
 A world-class, end-to-end platform for detecting vulnerabilities and malicious code in open-source software repositories using Large Language Models (LLMs), static analysis, and CVE/CWE mapping. This tool is designed for security researchers, developers, and organizations to automatically scan GitHub repositories, identify vulnerabilities, and generate actionable mitigation reports (including PDF downloads).
@@ -107,7 +112,7 @@ npm start
 ## 🌐 Usage
 
 ### **Analyze a GitHub Repository**
-1. Open the frontend in your browser (usually at `http://localhost:3000`).
+1. Open the frontend in your browser (usually at `http://localhost:3000` for local development, or your deployed frontend URL for production).
 2. Paste a public GitHub repository URL (e.g., `https://github.com/username/repo`).
 3. Click **Analyze Repository**.
 4. View vulnerabilities, suggested fixes, and download reports (JSON, text, HTML, PDF).

@@ -3,6 +3,7 @@ import './App.css';
 import CodeInput from './components/CodeInput';
 import RepoAnalyzer from './components/RepoAnalyzer';
 import ResultDisplay from './components/ResultDisplay';
+import { getApiUrl } from './config';
 
 function App() {
   const [activeTab, setActiveTab] = useState('code');
@@ -15,7 +16,7 @@ function App() {
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:8000/analyze/code', {
+      const response = await fetch(getApiUrl('/analyze/code'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +46,7 @@ function App() {
     setError(null);
     
     try {
-      const response = await fetch('http://localhost:8000/analyze/repo', {
+      const response = await fetch(getApiUrl('/analyze/repo'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

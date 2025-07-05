@@ -48,7 +48,7 @@ def test_report_formats():
         
         try:
             response = requests.post(
-                "http://localhost:8000/report",
+                "https://vul-detector.onrender.com/report",
                 json={
                     "analysis_result": sample_result,
                     "format": format_type
