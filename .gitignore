@@ -66,7 +66,7 @@ yarn-error.log*
 
 # Project specific
 backend/services/build/
-backend/services/tree-sitter-*/
+backend/app/services/tree-sitter-*/
 my-languages.exp
 
 # Misc
