@@ -8,4 +8,4 @@ def test_detects_eval_usage():
     vulnerabilities, _ = result  # Unpack the tuple
     assert len(vulnerabilities) == 1
     assert "eval" in vulnerabilities[0]["description"]
-    assert vulnerabilities[0]["line"] == 1 
+    assert vulnerabilities[0]["line"] == 2  # eval is on line 2 
