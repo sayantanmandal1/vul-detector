@@ -76,22 +76,22 @@ const RepoAnalyzer = ({ onAnalyze }) => {
         <h3>Example repositories to test:</h3>
         <div className="repo-examples">
           <button
-            onClick={() => setRepoUrl('https://github.com/octocat/Hello-World')}
+            onClick={() => setRepoUrl('https://github.com/sayantanmandal1/sign-recognition')}
             className="example-btn"
           >
-            octocat/Hello-World
+            sayantanmandal1/sign-recognition
           </button>
           <button
-            onClick={() => setRepoUrl('https://github.com/microsoft/vscode')}
+            onClick={() => setRepoUrl('https://github.com/sayantanmandal1/ai-resume-checker')}
             className="example-btn"
           >
-            microsoft/vscode
+            sayantanmandal1/ai-resume-checker
           </button>
           <button
-            onClick={() => setRepoUrl('https://github.com/facebook/react')}
+            onClick={() => setRepoUrl('https://github.com/sayantanmandal1/fake-bill-detector')}
             className="example-btn"
           >
-            facebook/react
+            sayantanmandal1/fake-bill-detector
           </button>
         </div>
       </div>
