@@ -76,7 +76,7 @@ jobs:
   deploy:
     needs: [backend-test]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
 
     steps:
     - name: Deploy to Render
@@ -89,7 +89,7 @@ jobs:
   release:
     needs: [deploy]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
 
     steps:
     - name: Checkout code
