@@ -28,7 +28,11 @@ def get_vulnerability_patterns(language: str):
             {"pattern": "password: ", "description": "Hardcoded passwords in code are a security risk."},
             {"pattern": "apiKey: ", "description": "Hardcoded API keys in code are a security risk."},
             {"pattern": "secret: ", "description": "Hardcoded secrets in code are a security risk."},
-            {"pattern": "token: ", "description": "Hardcoded tokens in code are a security risk."}
+            {"pattern": "token: ", "description": "Hardcoded tokens in code are a security risk."},
+            {"pattern": "process.env", "description": "Accessing environment variables may expose sensitive data."},
+            {"pattern": "require(", "description": "Dynamic require statements may lead to code injection."},
+            {"pattern": "setTimeout(", "description": "Dynamic code execution with setTimeout may be unsafe."},
+            {"pattern": "setInterval(", "description": "Dynamic code execution with setInterval may be unsafe."}
         ],
         "java": [
             {"pattern": "Runtime.getRuntime().exec(", "description": "Use of 'Runtime.exec' may lead to command injection vulnerabilities."},
@@ -77,6 +81,22 @@ def get_vulnerability_patterns(language: str):
             {"pattern": "expression(", "description": "CSS expressions may lead to code execution vulnerabilities."},
             {"pattern": "url(javascript:", "description": "JavaScript URLs in CSS may lead to XSS vulnerabilities."},
             {"pattern": "behavior:", "description": "CSS behaviors may lead to security vulnerabilities."}
+        ],
+        "typescript": [
+            {"pattern": "eval(", "description": "Use of 'eval' is insecure and may allow code execution vulnerabilities."},
+            {"pattern": "Function(", "description": "Use of 'Function' constructor may lead to code injection."},
+            {"pattern": "innerHTML = ", "description": "Direct assignment to innerHTML may lead to XSS vulnerabilities."},
+            {"pattern": "document.write(", "description": "Use of 'document.write' may lead to XSS vulnerabilities."},
+            {"pattern": "localStorage.setItem(", "description": "Storing sensitive data in localStorage may be insecure."},
+            {"pattern": "sessionStorage.setItem(", "description": "Storing sensitive data in sessionStorage may be insecure."},
+            {"pattern": "password: ", "description": "Hardcoded passwords in code are a security risk."},
+            {"pattern": "apiKey: ", "description": "Hardcoded API keys in code are a security risk."},
+            {"pattern": "secret: ", "description": "Hardcoded secrets in code are a security risk."},
+            {"pattern": "token: ", "description": "Hardcoded tokens in code are a security risk."},
+            {"pattern": "process.env", "description": "Accessing environment variables may expose sensitive data."},
+            {"pattern": "require(", "description": "Dynamic require statements may lead to code injection."},
+            {"pattern": "setTimeout(", "description": "Dynamic code execution with setTimeout may be unsafe."},
+            {"pattern": "setInterval(", "description": "Dynamic code execution with setInterval may be unsafe."}
         ]
     }
     

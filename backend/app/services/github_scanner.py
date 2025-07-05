@@ -10,7 +10,6 @@ from typing import Dict, Any, List
 from pathlib import Path
 
 from .analyzer import analyze_code
-from .static_analysis import run_static_analysis
 
 def analyze_repository_files(repository_url: str) -> Dict[str, Any]:
     """
@@ -46,6 +45,13 @@ def analyze_repository_files(repository_url: str) -> Dict[str, Any]:
             code_files = find_code_files(temp_dir)
             print(f"Found {len(code_files)} code files to analyze")
             
+            # Log file types found
+            file_types = {}
+            for file_path in code_files:
+                ext = file_path.suffix.lower()
+                file_types[ext] = file_types.get(ext, 0) + 1
+            print(f"File types found: {file_types}")
+            
             all_vulnerabilities = []
             analyzed_files = 0
             
@@ -57,8 +63,8 @@ def analyze_repository_files(repository_url: str) -> Dict[str, Any]:
                         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                             code_content = f.read()
                         
-                        # Analyze the file
-                        vulnerabilities = run_static_analysis(
+                        # Analyze the file using the full analysis pipeline
+                        vulnerabilities, _ = analyze_code(
                             code_content, 
                             language, 
                             str(file_path)
@@ -71,6 +77,12 @@ def analyze_repository_files(repository_url: str) -> Dict[str, Any]:
                         
                         all_vulnerabilities.extend(vulnerabilities)
                         analyzed_files += 1
+                        
+                        # Debug logging for files with vulnerabilities
+                        if vulnerabilities:
+                            print(f"Found {len(vulnerabilities)} vulnerabilities in {file_path} ({language})")
+                            for vuln in vulnerabilities:
+                                print(f"  - {vuln['description']} at line {vuln['line']}")
                         
                         if analyzed_files % 10 == 0:
                             print(f"Analyzed {analyzed_files}/{len(code_files)} files...")
@@ -143,9 +155,9 @@ def detect_language(file_path: Path) -> str:
     language_map = {
         '.py': 'python',
         '.js': 'javascript',
-        '.ts': 'javascript',  # TypeScript is similar to JavaScript
+        '.ts': 'typescript',  # TypeScript should have its own patterns
         '.jsx': 'javascript',
-        '.tsx': 'javascript',
+        '.tsx': 'typescript',  # TypeScript JSX
         '.java': 'java',
         '.c': 'c',
         '.cpp': 'cpp',
