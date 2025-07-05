@@ -1,8 +1,9 @@
-from app.services.static_analysis import run_static_analysis
+import time
+
 from app.services.cve_mapper import map_vulnerabilities_to_cve
 from app.services.fix_generator import generate_fixes
+from app.services.static_analysis import run_static_analysis
 
-import time
 
 def analyze_code(code: str, language: str, file: str = "unknown"):
     """

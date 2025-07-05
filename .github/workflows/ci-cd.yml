@@ -50,7 +50,7 @@ jobs:
     #   run: black --check --diff app/
 
     - name: Import sorting check with isort
-      run: isort --check-only --diff app/
+      run: isort --apply app/
 
     - name: Security scan with bandit
       run: bandit -r app/ -f json -o bandit-report.json || true

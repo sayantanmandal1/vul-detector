@@ -1,18 +1,19 @@
-from fastapi import APIRouter, HTTPException, Response
-from fastapi.responses import StreamingResponse
-from typing import Dict, Any
 import io
 import json
 from datetime import datetime
+from typing import Any, Dict
+
+from fastapi import APIRouter, HTTPException, Response
+from fastapi.responses import StreamingResponse
 
 from ..models.schemas import (
-    CodeAnalysisRequest, 
-    RepoAnalysisRequest, 
-    AnalysisResult, 
-    ReportRequest,
+    AnalysisResult,
+    CodeAnalysisRequest,
     PDFResponse,
+    RepoAnalysisRequest,
+    ReportRequest,
     ReportResponse,
-    Vulnerability
+    Vulnerability,
 )
 from ..services.analyzer import analyze_code
 from ..services.github_scanner import analyze_repository_files

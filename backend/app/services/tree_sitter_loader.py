@@ -1,5 +1,6 @@
 import os
 import sys
+
 from tree_sitter import Language, Parser
 
 BASE_DIR = os.path.dirname(__file__)

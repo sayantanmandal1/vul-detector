@@ -3,13 +3,14 @@ GitHub repository scanner for vulnerability detection.
 """
 
 import os
-import tempfile
 import subprocess
+import tempfile
 import time
-from typing import Dict, Any, List
 from pathlib import Path
+from typing import Any, Dict, List
 
 from .analyzer import analyze_code
+
 
 def analyze_repository_files(repository_url: str) -> Dict[str, Any]:
     """

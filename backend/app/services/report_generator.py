@@ -3,8 +3,9 @@ Report generator for vulnerability analysis results.
 """
 
 import json
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any, Dict
+
 
 def generate_report(analysis_result: Dict[str, Any], format_type: str) -> str | bytes:
     """
@@ -133,13 +134,20 @@ def generate_html_report(analysis_result: Dict[str, Any]) -> str:
 def generate_pdf_report(analysis_result: Dict[str, Any]) -> bytes:
     """Generate PDF report."""
     try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        from reportlab.lib import colors
         from io import BytesIO
-        
+
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import inch
+        from reportlab.platypus import (
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
+        )
+
         # Create PDF buffer
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=letter)
