@@ -4,7 +4,7 @@ from app.main import app
 client = TestClient(app)
 
 def test_post_analyze_endpoint():
-    response = client.post("/analyze", json={
+    response = client.post("/api/analyze/code", json={
         "code": "def test():\n    eval('print(1)')",
         "language": "python"
     })
