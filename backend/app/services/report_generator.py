@@ -1,308 +1,215 @@
+"""
+Report generator for vulnerability analysis results.
+"""
+
 import json
+from typing import Dict, Any
 from datetime import datetime
-from typing import List, Dict, Any, Union
-from fpdf import FPDF
-import io
-import os
 
-class ReportGenerator:
-    def __init__(self):
-        self.severity_levels = {
-            "high": ["eval", "exec", "os.system", "Runtime.getRuntime().exec", "gets", "strcpy", "pickle.loads", "yaml.load("],
-            "medium": ["input(", "innerHTML", "document.write", "strcat", "sprintf", "execute(", "cursor.execute("],
-            "low": ["subprocess.call", "setTimeout", "Class.forName", "scanf", "malloc", "JSON.parse("]
-        }
+def generate_report(analysis_result: Dict[str, Any], format_type: str) -> str | bytes:
+    """
+    Generate a report in the specified format.
     
-    def _determine_severity(self, description: str) -> str:
-        """Determine vulnerability severity based on description."""
-        description_lower = description.lower()
-        for severity, patterns in self.severity_levels.items():
-            for pattern in patterns:
-                if pattern.lower() in description_lower:
-                    return severity
-        return "low"
-    
-    def _group_by_severity(self, vulnerabilities: List[Dict]) -> Dict[str, List[Dict]]:
-        """Group vulnerabilities by severity level."""
-        grouped = {"high": [], "medium": [], "low": []}
-        for vuln in vulnerabilities:
-            severity = self._determine_severity(vuln.get("description", ""))
-            grouped[severity].append(vuln)
-        return grouped
-    
-    def _group_by_language(self, vulnerabilities: List[Dict]) -> Dict[str, List[Dict]]:
-        """Group vulnerabilities by programming language."""
-        grouped = {}
-        for vuln in vulnerabilities:
-            lang = vuln.get("language", "unknown")
-            if lang not in grouped:
-                grouped[lang] = []
-            grouped[lang].append(vuln)
-        return grouped
-    
-    def generate_pdf_report(self, analysis_result: Dict[str, Any]) -> bytearray:
-        """Generate a PDF report with detailed vulnerability information."""
-        try:
-            vulnerabilities = analysis_result.get("vulnerabilities", [])
-            
-            # Add severity to each vulnerability
-            for vuln in vulnerabilities:
-                vuln["severity"] = self._determine_severity(vuln.get("description", ""))
-            
-            # Create PDF
-            pdf = FPDF()
-            pdf.add_page()
-
-            # Register and use Unicode font
-            font_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../static/DejaVuSans.ttf"))
-            if not os.path.exists(font_path):
-                raise FileNotFoundError(f"Unicode font file not found: {font_path}")
-            pdf.add_font("DejaVu", "", font_path, uni=True)
-            pdf.set_font("DejaVu", "", 16)
-
-            # Title
-            pdf.cell(0, 10, "Vulnerability Analysis Report", ln=True, align='C')
-            pdf.ln(10)
-            
-            # Report metadata
-            pdf.set_font("DejaVu", "", 12)
-            pdf.cell(0, 10, f"Repository: {analysis_result.get('repository_url', 'N/A')}", ln=True)
-            pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True)
-            pdf.cell(0, 10, f"Files Analyzed: {analysis_result.get('total_files_analyzed', 0)}", ln=True)
-            pdf.cell(0, 10, f"Total Vulnerabilities: {analysis_result.get('total_vulnerabilities', 0)}", ln=True)
-            pdf.ln(10)
-            
-            # Summary by severity
-            grouped_by_severity = self._group_by_severity(vulnerabilities)
-            pdf.set_font("DejaVu", "", 14)
-            pdf.cell(0, 10, "Summary by Severity:", ln=True)
-            pdf.ln(5)
-            
-            pdf.set_font("DejaVu", "", 12)
-            for severity in ["high", "medium", "low"]:
-                count = len(grouped_by_severity[severity])
-                pdf.cell(0, 10, f"{severity.upper()}: {count}", ln=True)
-            pdf.ln(10)
-            
-            # Detailed vulnerabilities by severity
-            for severity in ["high", "medium", "low"]:
-                vulns = grouped_by_severity[severity]
-                if vulns:
-                    pdf.set_font("DejaVu", "", 14)
-                    pdf.cell(0, 10, f"{severity.upper()} SEVERITY VULNERABILITIES:", ln=True)
-                    pdf.ln(5)
-                    
-                    for i, vuln in enumerate(vulns, 1):
-                        pdf.set_font("DejaVu", "", 12)
-                        pdf.cell(0, 10, f"{i}. File: {vuln.get('file', 'N/A')}", ln=True)
-                        
-                        pdf.set_font("DejaVu", "", 10)
-                        pdf.cell(0, 8, f"Line: {vuln.get('line', 'N/A')}", ln=True)
-                        pdf.cell(0, 8, f"Language: {vuln.get('language', 'N/A')}", ln=True)
-                        pdf.cell(0, 8, f"Description: {vuln.get('description', 'N/A')}", ln=True)
-                        
-                        if vuln.get('cwe'):
-                            pdf.cell(0, 8, f"CWE: {vuln.get('cwe')}", ln=True)
-                        if vuln.get('cve'):
-                            pdf.cell(0, 8, f"CVE: {vuln.get('cve')}", ln=True)
-                        
-                        if vuln.get('suggested_fix'):
-                            pdf.cell(0, 8, "Suggested Fix:", ln=True)
-                            # Split long text into multiple lines
-                            fix_text = vuln.get('suggested_fix', '')
-                            words = fix_text.split()
-                            line = ""
-                            for word in words:
-                                if len(line + word) < 80:
-                                    line += word + " "
-                                else:
-                                    pdf.cell(0, 8, line, ln=True)
-                                    line = word + " "
-                            if line:
-                                pdf.cell(0, 8, line, ln=True)
-                        
-                        pdf.ln(5)
-            
-            # Return PDF as bytes
-            return pdf.output(dest='S')
-            
-        except Exception as e:
-            # Enhanced fallback: create a more informative error PDF
-            print(f"PDF generation error: {e}")
-            print(f"Error type: {type(e).__name__}")
-            import traceback
-            print(f"Traceback: {traceback.format_exc()}")
-            
-            try:
-                pdf = FPDF()
-                pdf.add_page()
-                pdf.set_font("Arial", "B", 16)
-                pdf.cell(0, 10, "Vulnerability Analysis Report", ln=True, align='C')
-                pdf.ln(10)
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(0, 10, "PDF Generation Error", ln=True)
-                pdf.ln(5)
-                pdf.set_font("Arial", "", 10)
-                pdf.cell(0, 8, f"Repository: {analysis_result.get('repository_url', 'N/A')}", ln=True)
-                pdf.cell(0, 8, f"Total Vulnerabilities: {analysis_result.get('total_vulnerabilities', 0)}", ln=True)
-                pdf.cell(0, 8, f"Error: {str(e)}", ln=True)
-                pdf.cell(0, 8, "Please use JSON or text format for detailed report.", ln=True)
-                return pdf.output(dest='S')
-            except Exception as fallback_error:
-                print(f"Fallback PDF generation also failed: {fallback_error}")
-                # If even the fallback fails, raise the original error
-                raise e
-    
-    def generate_json_report(self, analysis_result: Dict[str, Any]) -> str:
-        """Generate a JSON report with detailed vulnerability information."""
-        vulnerabilities = analysis_result.get("vulnerabilities", [])
+    Args:
+        analysis_result: Dictionary containing analysis results
+        format_type: Format type ('json', 'text', 'html', 'pdf')
         
-        # Add severity to each vulnerability
-        for vuln in vulnerabilities:
-            vuln["severity"] = self._determine_severity(vuln.get("description", ""))
-        
-        report = {
-            "report_metadata": {
-                "generated_at": datetime.now().isoformat(),
-                "repository_url": analysis_result.get("repository_url", ""),
-                "total_files_analyzed": analysis_result.get("total_files_analyzed", 0),
-                "total_vulnerabilities": analysis_result.get("total_vulnerabilities", 0)
-            },
-            "summary": {
-                "by_severity": {
-                    severity: len(vulns) 
-                    for severity, vulns in self._group_by_severity(vulnerabilities).items()
-                },
-                "by_language": {
-                    lang: len(vulns) 
-                    for lang, vulns in self._group_by_language(vulnerabilities).items()
-                }
-            },
-            "vulnerabilities": vulnerabilities
-        }
-        
-        return json.dumps(report, indent=2)
-    
-    def generate_text_report(self, analysis_result: Dict[str, Any]) -> str:
-        """Generate a human-readable text report."""
-        vulnerabilities = analysis_result.get("vulnerabilities", [])
-        grouped_by_severity = self._group_by_severity(vulnerabilities)
-        
-        report_lines = []
-        report_lines.append("=" * 60)
-        report_lines.append("VULNERABILITY ANALYSIS REPORT")
-        report_lines.append("=" * 60)
-        report_lines.append(f"Repository: {analysis_result.get('repository_url', 'N/A')}")
-        report_lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        report_lines.append(f"Files Analyzed: {analysis_result.get('total_files_analyzed', 0)}")
-        report_lines.append(f"Total Vulnerabilities: {analysis_result.get('total_vulnerabilities', 0)}")
-        report_lines.append("")
-        
-        # Summary by severity
-        report_lines.append("SUMMARY BY SEVERITY:")
-        report_lines.append("-" * 30)
-        for severity in ["high", "medium", "low"]:
-            count = len(grouped_by_severity[severity])
-            report_lines.append(f"{severity.upper()}: {count}")
-        report_lines.append("")
-        
-        # Detailed vulnerabilities by severity
-        for severity in ["high", "medium", "low"]:
-            vulns = grouped_by_severity[severity]
-            if vulns:
-                report_lines.append(f"{severity.upper()} SEVERITY VULNERABILITIES:")
-                report_lines.append("-" * 40)
-                for i, vuln in enumerate(vulns, 1):
-                    report_lines.append(f"{i}. File: {vuln.get('file', 'N/A')}")
-                    report_lines.append(f"   Line: {vuln.get('line', 'N/A')}")
-                    report_lines.append(f"   Language: {vuln.get('language', 'N/A')}")
-                    report_lines.append(f"   Description: {vuln.get('description', 'N/A')}")
-                    if vuln.get('cwe'):
-                        report_lines.append(f"   CWE: {vuln.get('cwe')}")
-                    if vuln.get('cve'):
-                        report_lines.append(f"   CVE: {vuln.get('cve')}")
-                    if vuln.get('suggested_fix'):
-                        report_lines.append(f"   Suggested Fix: {vuln.get('suggested_fix')}")
-                    report_lines.append("")
-        
-        return "\n".join(report_lines)
-    
-    def generate_html_report(self, analysis_result: Dict[str, Any]) -> str:
-        """Generate an HTML report for web display."""
-        vulnerabilities = analysis_result.get("vulnerabilities", [])
-        grouped_by_severity = self._group_by_severity(vulnerabilities)
-        
-        html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Vulnerability Analysis Report</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .header {{ background-color: #f0f0f0; padding: 20px; border-radius: 5px; }}
-                .summary {{ margin: 20px 0; }}
-                .severity-high {{ color: #d32f2f; }}
-                .severity-medium {{ color: #f57c00; }}
-                .severity-low {{ color: #388e3c; }}
-                .vuln-item {{ border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }}
-                .vuln-header {{ font-weight: bold; margin-bottom: 10px; }}
-                .fix-section {{ background-color: #f9f9f9; padding: 10px; margin-top: 10px; border-radius: 3px; }}
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>Vulnerability Analysis Report</h1>
-                <p><strong>Repository:</strong> {analysis_result.get('repository_url', 'N/A')}</p>
-                <p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
-                <p><strong>Files Analyzed:</strong> {analysis_result.get('total_files_analyzed', 0)}</p>
-                <p><strong>Total Vulnerabilities:</strong> {analysis_result.get('total_vulnerabilities', 0)}</p>
-            </div>
-            
-            <div class="summary">
-                <h2>Summary by Severity</h2>
-                <p><span class="severity-high">High: {len(grouped_by_severity['high'])}</span></p>
-                <p><span class="severity-medium">Medium: {len(grouped_by_severity['medium'])}</span></p>
-                <p><span class="severity-low">Low: {len(grouped_by_severity['low'])}</span></p>
-            </div>
-        """
-        
-        for severity in ["high", "medium", "low"]:
-            vulns = grouped_by_severity[severity]
-            if vulns:
-                html += f'<h2 class="severity-{severity}">{severity.upper()} Severity Vulnerabilities</h2>'
-                for vuln in vulns:
-                    html += f"""
-                    <div class="vuln-item">
-                        <div class="vuln-header">
-                            File: {vuln.get('file', 'N/A')} | 
-                            Line: {vuln.get('line', 'N/A')} | 
-                            Language: {vuln.get('language', 'N/A')}
-                        </div>
-                        <p><strong>Description:</strong> {vuln.get('description', 'N/A')}</p>
-                        {f'<p><strong>CWE:</strong> {vuln.get("cwe")}</p>' if vuln.get('cwe') else ''}
-                        {f'<p><strong>CVE:</strong> {vuln.get("cve")}</p>' if vuln.get('cve') else ''}
-                        {f'<div class="fix-section"><strong>Suggested Fix:</strong><br>{vuln.get("suggested_fix")}</div>' if vuln.get('suggested_fix') else ''}
-                    </div>
-                    """
-        
-        html += """
-        </body>
-        </html>
-        """
-        
-        return html
-
-def generate_report(analysis_result: Dict[str, Any], format_type: str = "json") -> Union[str, bytearray]:
-    """Generate a vulnerability report in the specified format."""
-    generator = ReportGenerator()
-    
+    Returns:
+        Report content as string (or bytes for PDF)
+    """
     if format_type == "json":
-        return generator.generate_json_report(analysis_result)
+        return generate_json_report(analysis_result)
     elif format_type == "text":
-        return generator.generate_text_report(analysis_result)
+        return generate_text_report(analysis_result)
     elif format_type == "html":
-        return generator.generate_html_report(analysis_result)
+        return generate_html_report(analysis_result)
     elif format_type == "pdf":
-        return generator.generate_pdf_report(analysis_result)
+        return generate_pdf_report(analysis_result)
     else:
-        raise ValueError(f"Unsupported format: {format_type}") 
+        raise ValueError(f"Unsupported format: {format_type}")
+
+def generate_json_report(analysis_result: Dict[str, Any]) -> str:
+    """Generate JSON report."""
+    return json.dumps(analysis_result, indent=2, default=str)
+
+def generate_text_report(analysis_result: Dict[str, Any]) -> str:
+    """Generate plain text report."""
+    report = []
+    report.append("=" * 60)
+    report.append("VULNERABILITY ANALYSIS REPORT")
+    report.append("=" * 60)
+    report.append("")
+    
+    # Summary
+    report.append("SUMMARY:")
+    report.append(f"Repository URL: {analysis_result.get('repository_url', 'N/A')}")
+    report.append(f"Total Files Analyzed: {analysis_result.get('total_files_analyzed', 0)}")
+    report.append(f"Total Vulnerabilities Found: {analysis_result.get('total_vulnerabilities', 0)}")
+    report.append(f"Analysis Time: {analysis_result.get('analysis_time', 0):.2f} seconds")
+    report.append(f"Timestamp: {analysis_result.get('timestamp', datetime.now())}")
+    report.append("")
+    
+    # Vulnerabilities
+    vulnerabilities = analysis_result.get('vulnerabilities', [])
+    if vulnerabilities:
+        report.append("VULNERABILITIES FOUND:")
+        report.append("-" * 40)
+        
+        for i, vuln in enumerate(vulnerabilities, 1):
+            report.append(f"{i}. File: {vuln.get('file', 'Unknown')}")
+            report.append(f"   Line: {vuln.get('line', 'Unknown')}")
+            report.append(f"   Language: {vuln.get('language', 'Unknown')}")
+            report.append(f"   Description: {vuln.get('description', 'No description')}")
+            report.append("")
+    else:
+        report.append("No vulnerabilities found.")
+    
+    return "\n".join(report)
+
+def generate_html_report(analysis_result: Dict[str, Any]) -> str:
+    """Generate HTML report."""
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Vulnerability Analysis Report</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { background-color: #f0f0f0; padding: 20px; border-radius: 5px; }
+            .summary { margin: 20px 0; }
+            .vulnerability { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }
+            .file { font-weight: bold; color: #333; }
+            .line { color: #666; }
+            .description { margin-top: 10px; }
+            .no-vulns { color: green; font-style: italic; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Vulnerability Analysis Report</h1>
+        </div>
+        
+        <div class="summary">
+            <h2>Summary</h2>
+            <p><strong>Repository URL:</strong> {repository_url}</p>
+            <p><strong>Total Files Analyzed:</strong> {total_files}</p>
+            <p><strong>Total Vulnerabilities Found:</strong> {total_vulns}</p>
+            <p><strong>Analysis Time:</strong> {analysis_time:.2f} seconds</p>
+            <p><strong>Timestamp:</strong> {timestamp}</p>
+        </div>
+        
+        <div class="vulnerabilities">
+            <h2>Vulnerabilities Found</h2>
+            {vulnerabilities_html}
+        </div>
+    </body>
+    </html>
+    """
+    
+    vulnerabilities = analysis_result.get('vulnerabilities', [])
+    vulnerabilities_html = ""
+    
+    if vulnerabilities:
+        for vuln in vulnerabilities:
+            vulnerabilities_html += f"""
+            <div class="vulnerability">
+                <div class="file">File: {vuln.get('file', 'Unknown')}</div>
+                <div class="line">Line: {vuln.get('line', 'Unknown')} | Language: {vuln.get('language', 'Unknown')}</div>
+                <div class="description">{vuln.get('description', 'No description')}</div>
+            </div>
+            """
+    else:
+        vulnerabilities_html = '<p class="no-vulns">No vulnerabilities found.</p>'
+    
+    return html.format(
+        repository_url=analysis_result.get('repository_url', 'N/A'),
+        total_files=analysis_result.get('total_files_analyzed', 0),
+        total_vulns=analysis_result.get('total_vulnerabilities', 0),
+        analysis_time=analysis_result.get('analysis_time', 0),
+        timestamp=analysis_result.get('timestamp', datetime.now()),
+        vulnerabilities_html=vulnerabilities_html
+    )
+
+def generate_pdf_report(analysis_result: Dict[str, Any]) -> bytes:
+    """Generate PDF report."""
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from io import BytesIO
+        
+        # Create PDF buffer
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=30,
+            alignment=1  # Center alignment
+        )
+        story.append(Paragraph("Vulnerability Analysis Report", title_style))
+        story.append(Spacer(1, 12))
+        
+        # Summary
+        story.append(Paragraph("Summary", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        summary_data = [
+            ['Repository URL', analysis_result.get('repository_url', 'N/A')],
+            ['Total Files Analyzed', str(analysis_result.get('total_files_analyzed', 0))],
+            ['Total Vulnerabilities Found', str(analysis_result.get('total_vulnerabilities', 0))],
+            ['Analysis Time', f"{analysis_result.get('analysis_time', 0):.2f} seconds"],
+            ['Timestamp', str(analysis_result.get('timestamp', datetime.now()))]
+        ]
+        
+        summary_table = Table(summary_data, colWidths=[2*inch, 4*inch])
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(summary_table)
+        story.append(Spacer(1, 20))
+        
+        # Vulnerabilities
+        story.append(Paragraph("Vulnerabilities Found", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        vulnerabilities = analysis_result.get('vulnerabilities', [])
+        if vulnerabilities:
+            for i, vuln in enumerate(vulnerabilities, 1):
+                vuln_text = f"""
+                <b>{i}. File:</b> {vuln.get('file', 'Unknown')}<br/>
+                <b>Line:</b> {vuln.get('line', 'Unknown')} | <b>Language:</b> {vuln.get('language', 'Unknown')}<br/>
+                <b>Description:</b> {vuln.get('description', 'No description')}
+                """
+                story.append(Paragraph(vuln_text, styles['Normal']))
+                story.append(Spacer(1, 12))
+        else:
+            story.append(Paragraph("No vulnerabilities found.", styles['Normal']))
+        
+        # Build PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer.getvalue()
+        
+    except ImportError:
+        # Fallback to text if reportlab is not available
+        text_report = generate_text_report(analysis_result)
+        return text_report.encode('utf-8')
+    except Exception as e:
+        # Fallback to error message
+        error_msg = f"PDF generation failed: {str(e)}. Please use JSON or text format instead."
+        return error_msg.encode('utf-8') 

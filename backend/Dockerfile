@@ -7,11 +7,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
+# Install system dependencies including C compiler and development tools
 RUN apt-get update && apt-get install -y \
     build-essential \
     git \
     curl \
+    gcc \
+    g++ \
+    make \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Create and set working directory
@@ -19,21 +23,32 @@ WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app ./app
+COPY build_tree_sitter.py ./build_tree_sitter.py
 
-# Create build directory
-RUN mkdir -p app/services/build
-
-# Build Tree-sitter grammars with absolute paths
+# Remove any existing tree-sitter directories and clone fresh ones
 RUN cd /app/app/services && \
-    python -c "import tree_sitter; import os; tree_sitter.Language.build_library('build/my-languages.so', [os.path.abspath('tree-sitter-python'), os.path.abspath('tree-sitter-c'), os.path.abspath('tree-sitter-cpp'), os.path.abspath('tree-sitter-javascript'), os.path.abspath('tree-sitter-java')])"
+    rm -rf tree-sitter-python tree-sitter-c tree-sitter-cpp tree-sitter-javascript tree-sitter-java && \
+    git clone https://github.com/tree-sitter/tree-sitter-python.git && \
+    git clone https://github.com/tree-sitter/tree-sitter-c.git && \
+    git clone https://github.com/tree-sitter/tree-sitter-cpp.git && \
+    git clone https://github.com/tree-sitter/tree-sitter-javascript.git && \
+    git clone https://github.com/tree-sitter/tree-sitter-java.git
 
-# Verify the build was successful
+# Set C compiler flags for compatibility
+ENV CC=gcc
+ENV CXX=g++
+ENV CFLAGS="-fPIC -O2 -std=c99"
+ENV CXXFLAGS="-fPIC -O2 -std=c++11"
+
+# Build Tree-sitter grammars using the build script
+RUN cd /app/app/services && \
+    python /app/build_tree_sitter.py
+
+# Verify the build was successful (just list the directory)
 RUN ls -la /app/app/services/build/
 
 # Production stage

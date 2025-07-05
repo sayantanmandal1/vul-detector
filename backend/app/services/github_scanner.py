@@ -1,105 +1,166 @@
+"""
+GitHub repository scanner for vulnerability detection.
+"""
+
 import os
 import tempfile
+import subprocess
 import time
-from git import Repo
+from typing import Dict, Any, List
 from pathlib import Path
 
-SUPPORTED_EXTENSIONS = {
-    "python": [".py"],
-    "javascript": [".js", ".jsx", ".ts", ".tsx"],
-    "java": [".java"],
-    "c": [".c"],
-    "cpp": [".cpp", ".cc", ".cxx", ".hpp", ".h"],
-    "html": [".html", ".htm"],
-    "css": [".css"]
-}
+from .analyzer import analyze_code
+from .static_analysis import run_static_analysis
 
-def clone_and_collect_files(repo_url):
+def analyze_repository_files(repository_url: str) -> Dict[str, Any]:
     """
-    Clone a GitHub repository and collect all supported code files.
+    Analyze a GitHub repository for vulnerabilities.
     
     Args:
-        repo_url (str): GitHub repository URL
+        repository_url: URL of the GitHub repository to analyze
         
     Returns:
-        tuple: (list of code files with metadata, temp directory path)
+        Dictionary containing analysis results
     """
-    temp_dir = tempfile.mkdtemp()
-    try:
-        Repo.clone_from(repo_url, temp_dir)
-        code_files = []
-        
-        for root, _, files in os.walk(temp_dir):
-            for file in files:
-                file_path = Path(root) / file
-                for lang, exts in SUPPORTED_EXTENSIONS.items():
-                    if any(file.endswith(ext) for ext in exts):
-                        # Get relative path from temp_dir
-                        relative_path = os.path.relpath(file_path, temp_dir)
-                        code_files.append({
-                            "path": str(file_path),
-                            "relative_path": relative_path,
-                            "language": lang,
-                            "filename": file
-                        })
-                        break  # Found language, move to next file
-        
-        return code_files, temp_dir
-    except Exception as e:
-        # Clean up temp directory on error
-        import shutil
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        raise e
-
-def analyze_repository_files(repo_url):
-    """
-    Clone repository and analyze all supported code files for vulnerabilities.
-    
-    Args:
-        repo_url (str): GitHub repository URL
-        
-    Returns:
-        dict: Analysis results with file metadata and vulnerabilities
-    """
-    from app.services.analyzer import analyze_code
-    
     start_time = time.time()
     
-    files, temp_dir = clone_and_collect_files(repo_url)
-    all_vulns = []
-    
-    for file_info in files:
-        try:
-            with open(file_info["path"], "r", encoding="utf-8", errors="ignore") as f:
-                code = f.read()
+    try:
+        # Create a temporary directory for cloning
+        with tempfile.TemporaryDirectory() as temp_dir:
+            print(f"Cloning repository: {repository_url}")
             
-            vulns, _ = analyze_code(code, file_info["language"])
+            # Clone the repository
+            clone_result = subprocess.run(
+                ["git", "clone", "--depth", "1", repository_url, temp_dir],
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minutes timeout
+            )
             
-            # Add file metadata to each vulnerability
-            for vuln in vulns:
-                vuln.update({
-                    "file": file_info["relative_path"],
-                    "filename": file_info["filename"],
-                    "language": file_info["language"]
-                })
+            if clone_result.returncode != 0:
+                raise Exception(f"Failed to clone repository: {clone_result.stderr}")
             
-            all_vulns.extend(vulns)
+            print(f"Repository cloned successfully to {temp_dir}")
             
-        except Exception as e:
-            # Log error but continue with other files
-            print(f"Error analyzing {file_info['path']}: {e}")
-            continue
+            # Find all code files
+            code_files = find_code_files(temp_dir)
+            print(f"Found {len(code_files)} code files to analyze")
+            
+            all_vulnerabilities = []
+            analyzed_files = 0
+            
+            # Analyze each file
+            for file_path in code_files:
+                try:
+                    language = detect_language(file_path)
+                    if language:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            code_content = f.read()
+                        
+                        # Analyze the file
+                        vulnerabilities = run_static_analysis(
+                            code_content, 
+                            language, 
+                            str(file_path)
+                        )
+                        
+                        # Add file information to vulnerabilities
+                        for vuln in vulnerabilities:
+                            vuln['file'] = str(file_path)
+                            vuln['line'] = vuln.get('line', 0)
+                        
+                        all_vulnerabilities.extend(vulnerabilities)
+                        analyzed_files += 1
+                        
+                        if analyzed_files % 10 == 0:
+                            print(f"Analyzed {analyzed_files}/{len(code_files)} files...")
+                            
+                except Exception as e:
+                    print(f"Error analyzing {file_path}: {e}")
+                    continue
+            
+            analysis_time = time.time() - start_time
+            
+            return {
+                "vulnerabilities": all_vulnerabilities,
+                "total_files_analyzed": analyzed_files,
+                "total_files_found": len(code_files),
+                "analysis_time": analysis_time,
+                "repository_url": repository_url
+            }
+            
+    except Exception as e:
+        print(f"Error analyzing repository: {e}")
+        return {
+            "vulnerabilities": [],
+            "total_files_analyzed": 0,
+            "total_files_found": 0,
+            "analysis_time": time.time() - start_time,
+            "repository_url": repository_url,
+            "error": str(e)
+        }
+
+def find_code_files(directory: str) -> List[Path]:
+    """
+    Find all code files in the given directory.
     
-    # Clean up temp directory
-    import shutil
-    shutil.rmtree(temp_dir, ignore_errors=True)
+    Args:
+        directory: Directory to search for code files
+        
+    Returns:
+        List of Path objects for code files
+    """
+    code_extensions = {
+        '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.c', '.cpp', '.cc', '.cxx',
+        '.h', '.hpp', '.cs', '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala'
+    }
     
-    analysis_time = time.time() - start_time
+    code_files = []
     
-    return {
-        "repository_url": repo_url,
-        "total_files_analyzed": len(files),
-        "total_vulnerabilities": len(all_vulns),
-        "vulnerabilities": all_vulns,
-        "analysis_time": analysis_time
-    } 
+    for root, dirs, files in os.walk(directory):
+        # Skip common directories that shouldn't be analyzed
+        dirs[:] = [d for d in dirs if d not in {'.git', 'node_modules', '__pycache__', 'venv', 'env', 'build', 'dist'}]
+        
+        for file in files:
+            file_path = Path(root) / file
+            if file_path.suffix.lower() in code_extensions:
+                code_files.append(file_path)
+    
+    return code_files
+
+def detect_language(file_path: Path) -> str:
+    """
+    Detect the programming language based on file extension.
+    
+    Args:
+        file_path: Path to the file
+        
+    Returns:
+        Language identifier string
+    """
+    extension = file_path.suffix.lower()
+    
+    language_map = {
+        '.py': 'python',
+        '.js': 'javascript',
+        '.ts': 'javascript',  # TypeScript is similar to JavaScript
+        '.jsx': 'javascript',
+        '.tsx': 'javascript',
+        '.java': 'java',
+        '.c': 'c',
+        '.cpp': 'cpp',
+        '.cc': 'cpp',
+        '.cxx': 'cpp',
+        '.h': 'c',
+        '.hpp': 'cpp',
+        '.cs': 'csharp',  # Not supported yet, but could be added
+        '.php': 'php',    # Not supported yet, but could be added
+        '.rb': 'ruby',    # Not supported yet, but could be added
+        '.go': 'go',      # Not supported yet, but could be added
+        '.rs': 'rust',    # Not supported yet, but could be added
+        '.swift': 'swift', # Not supported yet, but could be added
+        '.kt': 'kotlin',  # Not supported yet, but could be added
+        '.scala': 'scala' # Not supported yet, but could be added
+    }
+    
+    return language_map.get(extension, '') 

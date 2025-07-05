@@ -1,4 +1,5 @@
 import os
+import sys
 from tree_sitter import Language, Parser
 
 BASE_DIR = os.path.dirname(__file__)
@@ -25,6 +26,7 @@ JAVA_LANGUAGE = None
 # Try to load the pre-built library
 if os.path.exists(LIB_PATH):
     try:
+        print(f"Attempting to load tree-sitter library from: {LIB_PATH}")
         PY_LANGUAGE = Language(LIB_PATH, "python")
         C_LANGUAGE = Language(LIB_PATH, "c")
         CPP_LANGUAGE = Language(LIB_PATH, "cpp")
@@ -33,12 +35,45 @@ if os.path.exists(LIB_PATH):
         print("Successfully loaded pre-built tree-sitter languages")
     except Exception as e:
         print(f"Warning: Could not load pre-built tree-sitter languages: {e}")
-        # Fallback to None values
-        PY_LANGUAGE = None
-        C_LANGUAGE = None
-        CPP_LANGUAGE = None
-        JS_LANGUAGE = None
-        JAVA_LANGUAGE = None
+        print(f"Library path: {LIB_PATH}")
+        print(f"Library exists: {os.path.exists(LIB_PATH)}")
+        if os.path.exists(LIB_PATH):
+            try:
+                import subprocess
+                result = subprocess.run(['file', LIB_PATH], capture_output=True, text=True)
+                print(f"Library file type: {result.stdout}")
+            except Exception as file_error:
+                print(f"Could not check file type: {file_error}")
+        
+        # Try to rebuild if in development environment
+        if not IS_DOCKER:
+            try:
+                print("Attempting to rebuild tree-sitter library...")
+                Language.build_library(
+                    LIB_PATH,
+                    GRAMMAR_DIRS
+                )
+                PY_LANGUAGE = Language(LIB_PATH, "python")
+                C_LANGUAGE = Language(LIB_PATH, "c")
+                CPP_LANGUAGE = Language(LIB_PATH, "cpp")
+                JS_LANGUAGE = Language(LIB_PATH, "javascript")
+                JAVA_LANGUAGE = Language(LIB_PATH, "java")
+                print("Successfully rebuilt and loaded tree-sitter languages")
+            except Exception as rebuild_error:
+                print(f"Warning: Could not rebuild tree-sitter library: {rebuild_error}")
+                # Continue with None values for languages
+                PY_LANGUAGE = None
+                C_LANGUAGE = None
+                CPP_LANGUAGE = None
+                JS_LANGUAGE = None
+                JAVA_LANGUAGE = None
+        else:
+            # In Docker, just continue with None values
+            PY_LANGUAGE = None
+            C_LANGUAGE = None
+            CPP_LANGUAGE = None
+            JS_LANGUAGE = None
+            JAVA_LANGUAGE = None
 elif not IS_DOCKER:
     # Only try to build if not in Docker and library doesn't exist
     try:
