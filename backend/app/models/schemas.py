@@ -8,7 +8,7 @@ class Vulnerability(BaseModel):
     language: str
     description: str
     cwe: Optional[str] = None
-    cve: Optional[str] = None
+    cve: Optional[List[str]] = None
     suggested_fix: Optional[str] = None
     severity: Optional[str] = None
 

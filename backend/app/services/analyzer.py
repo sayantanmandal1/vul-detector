@@ -17,13 +17,14 @@ def analyze_code(code: str, language: str, file: str = "unknown"):
     for vuln in vulnerabilities:
         cve_info = map_vulnerabilities_to_cve(vuln["description"], language)
         if cve_info:
-            vuln["cve"] = cve_info
+            vuln["cwe"] = cve_info.get("cwe")
+            vuln["cve"] = cve_info.get("cve_examples", [])
     
     # Generate fix suggestions
     for vuln in vulnerabilities:
         fixes = generate_fixes(vuln["description"], language)
         if fixes:
-            vuln["fixes"] = fixes
+            vuln["suggested_fix"] = fixes[0] if fixes else None
     
     analysis_time = time.time() - start_time
     return vulnerabilities, analysis_time 
